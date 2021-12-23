@@ -1,0 +1,3 @@
+terraform/live/dev/dev.auto.tfvars
+terraform/live/dev/.terraform*
+terraform/live/dev/*.tfstate*

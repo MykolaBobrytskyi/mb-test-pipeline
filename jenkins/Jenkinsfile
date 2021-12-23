@@ -1,0 +1,37 @@
+pipeline {
+  agent { label 'master' }
+  options {
+    timeout 60
+    timestamps()
+    disableConcurrentBuilds()
+    buildDiscarder(logRotator(numToKeepStr: '5', artifactNumToKeepStr: '5'))
+  }
+  triggers {
+      pollSCM '*/5 * * * *'
+  }
+  environment {
+    BRANCH = "master"
+    GIT_CREDENTIALS = "mb-test-pipeline"
+    GIT_REPO = "git@github.com:MykolaBobrytskyi/mb-test-pipeline.git"
+  }
+  stages {
+    stage("GitHub checkout") {
+      steps {
+          git branch: env.BRANCH, credentialsId: env.GIT_CREDENTIALS, url: env.GIT_REPO, poll: false
+    }
+  }
+    stage('Update docker image') {
+      steps {
+          dir('docker/show-secrets-service') {
+            sh "docker build . --no-cache -t registry.digitalocean.com/mb-test-pipeline/show-secrets-service:latest"
+            sh "docker push registry.digitalocean.com/mb-test-pipeline/show-secrets-service:latest" }
+    }
+  }
+    stage('Run helm upgrade') {
+      steps {
+          dir('helm') {
+            sh "helm upgrade show-secrets-service ./show-secrets-service" }
+    }
+  }
+}
+}
